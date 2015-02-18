@@ -1,0 +1,31 @@
+{
+    "name": "johnpbloch/composer-grunt-bridge",
+    "description": "Grunt integration for Composer packages.",
+    "keywords": ["composer", "grunt", "package", "integration", "bridge", "plugin", "composer-plugin"],
+    "homepage": "https://github.com/johnpbloch/composer-grunt-bridge",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "John P Bloch",
+            "email": "me@johnpbloch.com"
+        }
+    ],
+    "type": "composer-plugin",
+    "require": {
+        "php": ">=5.4",
+        "composer-plugin-api": "1.0.0",
+        "icecave/isolator": "~2",
+        "eloquent/composer-npm-bridge": "~2.1"
+    },
+    "require-dev": {
+        "composer/composer": "dev-master@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "JPB\\Composer\\GruntBridge\\": "src"
+        }
+    },
+    "extra": {
+        "class": "JPB\\Composer\\GruntBridge\\GruntBridgePlugin"
+    }
+}
