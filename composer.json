@@ -13,7 +13,7 @@
     "type": "composer-plugin",
     "require": {
         "php": ">=5.4",
-        "composer-plugin-api": "1.0.0",
+        "composer-plugin-api": "^1.0",
         "icecave/isolator": "~2",
         "eloquent/composer-npm-bridge": "~2.1"
     },
