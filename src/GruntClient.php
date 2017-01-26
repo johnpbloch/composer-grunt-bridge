@@ -12,131 +12,114 @@
 namespace JPB\Composer\GruntBridge;
 
 use Composer\Util\ProcessExecutor;
-use Icecave\Isolator\Isolator;
 use Symfony\Component\Process\ExecutableFinder;
 
 /**
  * A simple client for performing Grunt operations.
  */
 class GruntClient implements GruntClientInterface {
-	/**
-	 * Construct a new Grunt client.
-	 *
-	 * @param ProcessExecutor|null  $processExecutor  The process executor to use.
-	 * @param ExecutableFinder|null $executableFinder The executable finder to use.
-	 * @param Isolator|null         $isolator         The isolator to use.
-	 */
-	public function __construct(
-		ProcessExecutor $processExecutor = null,
-		ExecutableFinder $executableFinder = null,
-		Isolator $isolator = null
-	) {
-		if ( null === $processExecutor ) {
-			$processExecutor = new ProcessExecutor;
-		}
-		if ( null === $executableFinder ) {
-			$executableFinder = new ExecutableFinder;
-		}
 
-		$this->processExecutor  = $processExecutor;
-		$this->executableFinder = $executableFinder;
-		$this->isolator         = Isolator::get( $isolator );
-	}
+    /**
+     * Construct a new Grunt client.
+     *
+     * @param ProcessExecutor|null  $processExecutor  The process executor to use.
+     * @param ExecutableFinder|null $executableFinder The executable finder to use.
+     * @param Isolator|null         $isolator         The isolator to use.
+     */
+    public function __construct(ProcessExecutor $processExecutor = null, ExecutableFinder $executableFinder = null) {
+        if (null === $processExecutor) {
+            $processExecutor = new ProcessExecutor;
+        }
+        if (null === $executableFinder) {
+            $executableFinder = new ExecutableFinder;
+        }
 
-	/**
-	 * Get the process executor.
-	 *
-	 * @return ProcessExecutor The process executor.
-	 */
-	public function processExecutor() {
-		return $this->processExecutor;
-	}
+        $this->processExecutor = $processExecutor;
+        $this->executableFinder = $executableFinder;
+    }
 
-	/**
-	 * Get the executable finder.
-	 *
-	 * @return ExecutableFinder The executable finder.
-	 */
-	public function executableFinder() {
-		return $this->executableFinder;
-	}
+    /**
+     * Get the process executor.
+     *
+     * @return ProcessExecutor The process executor.
+     */
+    public function processExecutor() {
+        return $this->processExecutor;
+    }
 
-	/**
-	 * Run a grunt task.
-	 *
-	 * @param string|null $task The task to run, or null for the default task.
-	 * @param string|null $path The path to the directory containing the Gruntfile, or null to use the current working directory.
-	 *
-	 * @throws Exception\GruntNotFoundException      If the grunt executable cannot be located.
-	 * @throws Exception\GruntCommandFailedException If the operation fails.
-	 */
-	public function runTask( $task = null, $path = null ) {
-		if ( $task && ! is_array( $task ) ) {
-			$task = [ $task ];
-		}
-		$this->executeGrunt( $task ?: [ ], $path );
-	}
+    /**
+     * Get the executable finder.
+     *
+     * @return ExecutableFinder The executable finder.
+     */
+    public function executableFinder() {
+        return $this->executableFinder;
+    }
 
-	/**
-	 * Execute an Grunt command.
-	 *
-	 * @param             array                 [integer,string] $arguments            The arguments to pass to the grunt executable.
-	 * @param string|null $workingDirectoryPath The path to the working directory, or null to use the current working directory.
-	 *
-	 * @throws Exception\GruntNotFoundException      If the grunt executable cannot be located.
-	 * @throws Exception\GruntCommandFailedException If the operation fails.
-	 */
-	protected function executeGrunt(
-		array $arguments,
-		$workingDirectoryPath = null
-	) {
-		array_unshift( $arguments, $this->gruntPath() );
-		$command = implode( ' ', array_map( 'escapeshellarg', $arguments ) );
+    /**
+     * Run a grunt task.
+     *
+     * @param string|null $task The task to run, or null for the default task.
+     * @param string|null $path The path to the directory containing the Gruntfile, or null to use the current working directory.
+     *
+     * @throws Exception\GruntNotFoundException      If the grunt executable cannot be located.
+     * @throws Exception\GruntCommandFailedException If the operation fails.
+     */
+    public function runTask($task = null, $path = null) {
+        if ($task && !is_array($task)) {
+            $task = [$task];
+        }
+        $this->executeGrunt($task ? : [], $path);
+    }
 
-		if ( null !== $workingDirectoryPath ) {
-			$previousWorkingDirectoryPath = $this->isolator()->getcwd();
-			$this->isolator()->chdir( $workingDirectoryPath );
-		}
+    /**
+     * Execute an Grunt command.
+     *
+     * @param             array                 [integer,string] $arguments            The arguments to pass to the grunt executable.
+     * @param string|null $workingDirectoryPath The path to the working directory, or null to use the current working directory.
+     *
+     * @throws Exception\GruntNotFoundException      If the grunt executable cannot be located.
+     * @throws Exception\GruntCommandFailedException If the operation fails.
+     */
+    protected function executeGrunt(array $arguments, $workingDirectoryPath = null) {
+        array_unshift($arguments, $this->gruntPath());
+        $command = implode(' ', array_map('escapeshellarg', $arguments));
 
-		$exitCode = $this->processExecutor()->execute( $command );
+        if (null !== $workingDirectoryPath) {
+            $previousWorkingDirectoryPath = $this->isolator()->getcwd();
+            $this->isolator()->chdir($workingDirectoryPath);
+        }
 
-		if ( null !== $workingDirectoryPath ) {
-			$this->isolator()->chdir( $previousWorkingDirectoryPath );
-		}
+        $exitCode = $this->processExecutor()->execute($command);
 
-		if ( 0 !== $exitCode ) {
-			throw new Exception\GruntCommandFailedException( $command );
-		}
-	}
+        if (null !== $workingDirectoryPath) {
+            call_user_func($this->chdir, $previousWorkingDirectoryPath);
+        }
 
-	/**
-	 * Get the grunt exectable path.
-	 *
-	 * @return string                           The path to the grunt executable.
-	 * @throws Exception\GruntNotFoundException If the grunt executable cannot be located.
-	 */
-	protected function gruntPath() {
-		if ( null === $this->gruntPath ) {
-			$this->gruntPath = $this->executableFinder()->find( 'grunt' );
-			if ( null === $this->gruntPath ) {
-				throw new Exception\GruntNotFoundException;
-			}
-		}
+        if (0 !== $exitCode) {
+            throw new Exception\GruntCommandFailedException($command);
+        }
+    }
 
-		return $this->gruntPath;
-	}
+    /**
+     * Get the grunt exectable path.
+     *
+     * @return string                           The path to the grunt executable.
+     * @throws Exception\GruntNotFoundException If the grunt executable cannot be located.
+     */
+    protected function gruntPath() {
+        if (null === $this->gruntPath) {
+            $this->gruntPath = $this->executableFinder()->find('grunt', 'node_modules/.bin/grunt');
+            if (null === $this->gruntPath) {
+                throw new Exception\GruntNotFoundException;
+            }
+        }
 
-	/**
-	 * Get the isolator.
-	 *
-	 * @return Isolator The isolator.
-	 */
-	protected function isolator() {
-		return $this->isolator;
-	}
+        return $this->gruntPath;
+    }
 
-	private $processExecutor;
-	private $executableFinder;
-	private $isolator;
-	private $gruntPath;
+    private $processExecutor;
+    private $executableFinder;
+    private $gruntPath;
+
 }
